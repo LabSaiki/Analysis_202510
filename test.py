@@ -28,11 +28,14 @@ def piv(
         frameSize=(pre_frame.shape[1], pre_frame.shape[0])
     )
     pre_frame = None
-    for i in range(10):
+    i = 0
+    while True:
+        i += 1
         print("start ", i)
         ret, frame = caputure.read()
-        if not ret:
+        if not ret or i > 10:
             print("failed to read frame", i)
+            caputure.release()
             break
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         threshold_value, frame = cv2.threshold(
@@ -65,7 +68,7 @@ def piv(
                 count = 0
                 for z in range(temp_h):
                     count += int(np.sum(template[z, :])/255)
-                if count < 100:
+                if count < np.square(window_size)*0.05:
                     continue
 
 
@@ -87,6 +90,12 @@ def piv(
                 vector_lengths.append(vector_length)
                 vector_infos.append(coordinate)
                 correlation_coeffs.append(max_val)
+
+                vector_threshold = window_size / 2
+                if vector_length >= vector_threshold:
+                    continue
+                after_h_center = win_h_center  + dy*10
+                after_w_center = win_w_center  + dx*10
 
                 cv2.arrowedLine(
                     copy_pre_frame,
@@ -119,6 +128,6 @@ if __name__ == "__main__":
         input_name=path,
         output_dir=output,
         window_size=100,
-        overlap=20,
+        overlap=50,
         vector_threshold=0
     )
