@@ -2,6 +2,12 @@ import cv2
 import numpy as np
 from matplotlib import pyplot as plt
 
+def array_append(target, new_array, axis=0):
+    if target is None:
+        return new_array
+    else:
+        return  np.append(target, new_array, axis=axis)
+
 def piv(
         input_name,
         output_dir,
@@ -14,7 +20,7 @@ def piv(
 
     ret, pre_frame = caputure.read()
     vector_lengths = []
-    vector_infos = []
+    vector_infos = None
     correlation_coeffs = []
 
     add_vector_frames = []
@@ -33,7 +39,7 @@ def piv(
         i += 1
         print("start ", i)
         ret, frame = caputure.read()
-        if not ret or i > 10:
+        if not ret or i > 500:
             print("failed to read frame", i)
             caputure.release()
             break
@@ -52,6 +58,7 @@ def piv(
         h_steps = int(h / (window_size - overlap))
         w_steps = int(w / (window_size - overlap))
 
+        frame_vector_infos = None
         for h_step in range(h_steps - 1):
             for w_step in range(w_steps - 1):
                 # define window to set template
@@ -62,15 +69,6 @@ def piv(
 
                 # set template
                 template = pre_frame[win_h_start:win_h_end,win_w_start:win_w_end]
-
-                temp_h = template.shape[0]
-
-                count = 0
-                for z in range(temp_h):
-                    count += int(np.sum(template[z, :])/255)
-                if count < np.square(window_size)*0.05:
-                    continue
-
 
                 method = cv2.TM_CCOEFF_NORMED
                 res = cv2.matchTemplate(frame, template, method)
@@ -85,17 +83,29 @@ def piv(
                 dx = after_w_center - win_w_center
                 dy = after_h_center - win_h_center
                 vector_length = np.sqrt(dx**2 + dy**2)
-                coordinate = [after_w_center, after_h_center, dx, dy]
-                
-                vector_lengths.append(vector_length)
-                vector_infos.append(coordinate)
-                correlation_coeffs.append(max_val)
 
-                vector_threshold = window_size / 2
+                # count white px in template and skip if too few
+                temp_h = template.shape[0]
+                count = 0
+                for z in range(temp_h):
+                    count += int(np.sum(template[z, :])/255)
+                if count < np.square(window_size)*0.05:
+                    dx, dy = np.nan, np.nan
+
+                # apply vector threshold
+                vector_threshold = window_size * 0.7
                 if vector_length >= vector_threshold:
+                    dx, dy = np.nan, np.nan
+                coordinate = np.array([win_w_center, win_h_center, dx, dy]).reshape(1, 4)
+
+                frame_vector_infos = array_append(frame_vector_infos, coordinate)
+
+                if np.isnan(dx):
                     continue
-                after_h_center = win_h_center  + dy*10
-                after_w_center = win_w_center  + dx*10
+
+
+                after_h_center = win_h_center + dy * 10
+                after_w_center = win_w_center + dx * 10
 
                 cv2.arrowedLine(
                     copy_pre_frame,
@@ -115,15 +125,19 @@ def piv(
 
         # cv2.imshow("PIV Result", copy_pre_frame)
         # cv2.waitKey(0)
+
+        r, c = frame_vector_infos.shape
+        frame_vector_infos = frame_vector_infos.reshape(1, r, c)
+        vector_infos = array_append(vector_infos, frame_vector_infos)
         out.write(copy_pre_frame)
 
         pre_frame = frame
     out.release()
     caputure.release()
-        
-if __name__ == "__main__":
+
+def main():
     path = "C:\\Users\\tsaik\\PythonCode\\Analysis_202510_Data\\0.40_1.mp4"
-    output = "C:\\Users\\tsaik\\PythonCode\\Analysis_202510_Data\\output.mp4"
+    output = "C:\\Users\\tsaik\\PythonCode\\Analysis_202510_Data\\output2.mp4"
     piv(
         input_name=path,
         output_dir=output,
@@ -131,3 +145,20 @@ if __name__ == "__main__":
         overlap=50,
         vector_threshold=0
     )
+
+import random
+    
+def test():
+    save_array = np.array(
+        [[a,2*a,np.nan] for a in range(5)]
+    )
+    print(save_array)
+    print(type(save_array))
+    np.save("test", save_array)
+
+    load = np.load("test.npy")
+    print(load)
+
+if __name__ == "__main__":
+    main()
+    # test()
