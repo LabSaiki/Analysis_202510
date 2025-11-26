@@ -58,12 +58,14 @@ def piv(
         # < Calculate PIV >
         #   vvvvvvvvvvvvvv
 
+        # 枠の設定
         h, w = frame.shape
         h_steps = int(h / (window_size - overlap))
         w_steps = int(w / (window_size - overlap))
 
         frame_vector_infos = []
 
+        # ウィンドウごとにテンプレートマッチング
         for h_step in range(h_steps - 1):
             for w_step in range(w_steps - 1):
                 # define window to set template
@@ -132,12 +134,12 @@ def piv(
 
 def get_average_velocity():
     vector_infos = np.load("C:\\Users\\tsaik\\PythonCode\\Analysis_202510_Data\\vector_infos.npy", allow_pickle=True)
-    info_path = ""
+    info_path = r"C:\Users\tsaik\PythonCode\Analysis_202510_Data\0.40_1.txt"
     with open(info_path, "r") as f:
         info = {}
         for line in f:
             key, value = line.strip().split(":")
-            info[key] = float(value)
+            info[key] = value
 
     setted_line_position = list(map(int, info["Line positions(px,10s)"].split(",")))
     skep_frames = 100
@@ -147,26 +149,36 @@ def get_average_velocity():
         lines = list(map(int, np.linspace(pre, after, skep_frames+1)))
         continuous_line_positions.extend(lines[:-1])
     
+    movie_velocities_x = []
     for frame_vector, line_position in zip(vector_infos, continuous_line_positions):
         frame_vectors = np.array(frame_vector)
         average_velocity_x = 0
-
-
-
+        average_population = np.array(
+            list(filter(
+                lambda x: x[0] >= line_position, frame_vectors
+            ))
+        )
+        average_velocity_x = np.nanmean(average_population[:,2])
+        movie_velocities_x.append(average_velocity_x)
+    
+    plt.plot(movie_velocities_x)
+    plt.show()
+    plt.close()
 
     
 
 
 def main():
-    path = "C:\\Users\\tsaik\\PythonCode\\Analysis_202510_Data\\0.40_1.mp4"
-    output = "C:\\Users\\tsaik\\PythonCode\\Analysis_202510_Data\\output2.mp4"
-    piv(
-        input_name=path,
-        output_dir=output,
-        window_size=100,
-        overlap=50,
-        vector_threshold=0
-    )
+    # path = "C:\\Users\\tsaik\\PythonCode\\Analysis_202510_Data\\0.40_1.mp4"
+    # output = "C:\\Users\\tsaik\\PythonCode\\Analysis_202510_Data\\output2.mp4"
+    # piv(
+    #     input_name=path,
+    #     output_dir=output,
+    #     window_size=100,
+    #     overlap=50,
+    #     vector_threshold=0
+    # )
+    get_average_velocity()
 
     
 def test():
@@ -181,11 +193,8 @@ def test():
     print(A)
     print(np.array(A))
     
-    B = np.linspace(0,1,10)
-    print(list(filter(
-        lambda x: x%2 == 0 in B, 
-    )
-    ))
+    B = np.array([1,2,3,4,5,np.nan])
+    print(np.mean(B))
 
 
     # save_array = np.array(
@@ -199,5 +208,5 @@ def test():
     # print(load)
 
 if __name__ == "__main__":
-    # main()
-    test()
+    main()
+    # test()
