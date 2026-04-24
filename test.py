@@ -166,6 +166,48 @@ def get_average_velocity():
     plt.close()
 
     
+def set_file_path():
+    import tkinter as tk
+    from tkinter import ttk
+    from tkinter import filedialog
+    root = tk.Tk()
+    root.geometry("400x300")
+    root.title("select")
+
+    text = ttk.Label(
+        root,
+        text=""
+    )
+    text.pack()
+
+    dirs = []
+    def press_button():
+        dir_path = filedialog.askdirectory(initialdir="C:/Users/tsaik/PythonCode")
+        if dir_path not in dirs:
+            dirs.append(dir_path)
+            n_text = ttk.Label(root, text=dir_path)
+            n_text.pack()
+    dir_button = ttk.Button(
+        root,
+        text="select file",
+        command=press_button
+    )
+
+    dir_button.pack()
+    def press_reset():
+        reset_text = ttk.Label(root, text="─────reseted─────")
+        reset_text.pack()
+        dirs.clear()
+    reset_button = ttk.Button(
+        root,
+        text="reset",
+        command=press_reset
+    )
+    reset_button.pack()
+    root.mainloop()
+
+    print(dirs)
+
 
 
 def main():
@@ -178,9 +220,10 @@ def main():
     #     overlap=50,
     #     vector_threshold=0
     # )
-    get_average_velocity()
+    # get_average_velocity()
 
-    
+    set_file_path()
+
 def test():
 
     import random
